@@ -131,6 +131,7 @@ go () {
 		-l|--list)
 			if [[ ${#row[@]} = 0 ]]; then
 				echo "No bookmarks stored yet, try adding one with \"${func_name} -a . bookmark\""
+				IFS=$tmpifs
 				return
 			fi
 

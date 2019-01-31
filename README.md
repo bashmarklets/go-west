@@ -4,9 +4,9 @@ Go is a bash (and zsh) solution that allows you to bookmark directories so that 
 
 ## Why would I want to use something like this?
 
-I believe that *most* people that do work on the console eventually makes the realisation that they naviate to the same directories over and over again and they end up optimising it by doing one of two things. Either they create a symlink to the directory in their home directory, or they set up an alias to `cd` into the given directory.
+I believe that *most* people that do work on the console eventually make the realisation that they naviate to the same directories over and over again and they end up optimising it by doing one of two things. Either they create a symlink to the directory in their home directory, or they set up an alias to `cd` into the given directory.
 
-Both of these solutions work great and saves the user a lot of time when navigating around. The main problem with these solutions though is that they end up being cumbersome to maintain as the number of directories grow. Symlinks can also clutter your home directory while it can be hard to remember all the aliases.
+Both of these solutions work great and save the user a lot of time when navigating around. The main problem with these solutions though is that they end up being cumbersome to maintain as the number of directories grow. Symlinks can also clutter your home directory while it can be hard to remember all the aliases.
 
 Go is a relatively simple bash (or zsh) function that allows you to easily bookmark directories, list and jump to them at will. It also has some convenience addons like doing an `ls` automatically after moving to a directory.
 
@@ -18,7 +18,7 @@ source path/to/go.inc
 ```
 
 ## Example usage
-```bash
+```
 $ go --help
 
 Usage: go [OPTION?] [DIRECTORY?] [BOOKMARK?]
@@ -54,7 +54,7 @@ $ go west
 [bash@marklet:/home/bash/path/to/bashmarklets/go-west]
 ```
 
-Note that if you don't like the function name of `go` then you can name this to something more to your liking.
+Note that if you don't like the function name of `go` then you can change this to something more to your liking.
 
 How about giving it a go and see for yourself?
 
@@ -62,11 +62,11 @@ How about giving it a go and see for yourself?
 
 Most people have the tendency of doing a quick `ls` after changing directories. For convenience the go script does this automatically by default.
 
-If you don't like this then you can change this to another command of choice by setting the _GOCMD variable, e.g.
+Should you not like this then you can change it to another command of choice by setting the _GOCMD variable, e.g.
 ```bash
 _GOCMD="ls -l"
 ```
-or, should you not want this at all then try setting it to a no-op like this:
+or, if you do not want this at all then try setting it to a no-op like this:
 ```bash
 _GOCMD=":"
 ```
