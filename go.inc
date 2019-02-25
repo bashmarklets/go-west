@@ -36,42 +36,51 @@ go () {
 	if [[ $# == 0 ]]; then
 		set -- -h
 	fi
-	
+
+	local key=""
+	local val=""
+	local meta=""
+
 	while (( $# )); do
 		case "$1" in
 		-a|--add)
 			key=""
-			case "$#" in
-			1)
-				val=$(pwd)
+			val=""
+			shift
+
+			if [[ $# > 0 ]] && [[ ! "$1" =~ ^- ]]; then
+				if [[ -d "$1" ]] || [[ "$1" =~ / ]]; then
+					val=$1
+				else
+					key=$1
+				fi
 				shift
-				;;
-			2)
-				if [[ -e $2 ]]; then
-					val=$(realpath "$2")
+			fi
+
+			if [[ $# > 0 ]] && [[ ! "$1" =~ ^- ]]; then
+				if [[ -d "$1" ]]; then
+					key=$val
+					val=$1
+				elif [[ -d "$val" ]]; then
+					key=$1
+				elif [[ "$1" =~ / ]]; then
+					key=$val
+					val=$1
 				else
-					val=$(pwd)
-					key=$2
+					key=$1
 				fi
-				shift 2
-				;;
-			*)
-				if [[ -d $3 ]] || [[ $3 =~ "/" ]]; then
-					val=$3
-					key=$2
-				else
-					val=$2
-					key=$3
-				fi
-				shift 3
-				;;
-			esac
-			
+				shift
+			fi
+
+			if [[ -z "$val" ]]; then
+				val=$(pwd)
+			fi
+
 			if [[ -d "$val" ]]; then
 				val=$(realpath "$val")
 			fi
-			
-			if [[ "$key" = "" ]]; then
+
+			if [[ -z "$key" ]]; then
 				key=${val##*/}
 				if [ $ZSH_VERSION ]; then
 					key=$key:l
@@ -80,92 +89,144 @@ go () {
 				fi
 			fi
 			
-			# No support for spaces in bookmarks
-			key=${key//[ ]/}
+			# No support for spaces and ¦ in bookmarks
+			key=${key//[ ¦]/}
 			
 			if [[ -z "$key" ]]; then
 				echo "Please specify a name to store this bookmark as"
 			else
-				row[$key]="$val"
+				row[$key]="${val}${meta}"
+				meta=""
 				echo "$val added as $key"
 				dirty=1
 			fi
 			;;
 		-r|--remove)
-			case "$#" in
-			1)
-				key=${$(pwd)##*/}
+			shift
+			if [[ $# > 0 ]]; then
+				key=$1
 				shift
-				;;
-			*)
-				key=$2
-				shift 2
-				;;
-			esac
+			fi
+
+			if [[ -z "$key" ]]; then
+				key=${$(pwd)##*/}
+			fi
 			
-			if [[ -z ${row[$key]} ]]; then
-				echo "Bookmark with key $key does not exist"
+			if [[ -z "${row[$key]}" ]]; then
+				echo "Bookmark with key \"$key\" does not exist"
 			else
-				val=${row[$key]}
+				val=${row[$key]%%¦*}
 				unset "row[$key]"
 				echo "key '$key' referring to $val removed"
 				dirty=1
 			fi
 			;;
 		--clear)
+			shift
 			if [[ -e "$filestore" ]]; then
 				rm -f -- "$filestore"
 			fi
-			shift
 			;;
 		--purge)
+			shift
 			for key in $keys; do
-				if [[ ! -e "${row[$key]}" ]]; then
-					echo "Removing $key ➟ ${row[$key]}"
+				if [[ "${row[$key]#*¦}" =~ (¦|^)pin(¦|$) ]]; then
+					# pinned key, do not purge
+					continue
+				fi
+				if [[ ! -e "${row[$key]%%¦*}" ]]; then
+					echo "Removing $key ➟ ${row[$key]%%¦*}"
 					unset "row[$key]"
 					dirty=1
 				fi
 			done
+			;;
+		--pin)
 			shift
+			if [[ $# > 0 ]] && [[ ! "$1" =~ ^- ]]; then
+				key=$1
+				shift
+			fi
+
+			if [[ -z "${key}" ]]; then
+				meta="¦pin"
+			elif [[ ! -z "${row[$key]}" ]]; then
+				if [[ "${row[$key]}" =~ ¦pin(¦|$) ]]; then
+					echo "Bookmark with key \"$key\" is already pinned"
+				else
+					row[$key]="${row[$key]}¦pin"
+					echo "Pinned key \"$key\""
+					dirty=1
+				fi
+			else
+				echo "Bookmark with key \"$key\" does not exist"
+			fi
+			;;
+		--unpin)
+			shift
+			if [[ $# > 0 ]] && [[ ! "$1" =~ ^- ]]; then
+				key=$1
+				shift
+			fi
+
+			if [[ -z "${key}" ]]; then
+				echo "Please specify the bookmark you wish to unpin"
+			elif [[ ! -z "${row[$key]}" ]]; then
+				if [[ "${row[$key]}" =~ ¦pin(¦|$) ]]; then
+					row[$key]="${row[$key]//¦pin/}"
+					echo "Unpinned key \"$key\""
+					dirty=1
+				else
+					echo "Bookmark with key \"$key\" is not pinned"
+				fi
+			else
+				echo "Bookmark with key \"$key\" does not exist"
+			fi
 			;;
 		-l|--list)
+			shift
 			if [[ ${#row[@]} = 0 ]]; then
 				echo "No bookmarks stored yet, try adding one with \"${func_name} -a . bookmark\""
 				IFS=$tmpifs
 				return
 			fi
 
-			local list_format="%-18s%-2s%-10s\n"
+			local list_format="%-17s%-3s%-10s\n"
+			local exists
 			for key in $keys; do
-				if [[ -d ${row[$key]} ]]; then
-					local exists=""
+				if [[ "${row[$key]#*¦}" =~ (¦|^)pin(¦|$) ]]; then
+					exists="🖈  "
+				elif [[ -d ${row[$key]%%¦*} ]]; then
+					exists=""
 				else
-					local exists="-"
+					exists=" - "
 				fi
-				printf "$list_format" "$key" "$exists" "${row[$key]}"
+				printf "$list_format" "$key" "$exists" "${row[$key]%%¦*}"
 			done
 			echo
-			
-			shift
 			;;
 		--locate)
-			echo "$filestore"
 			shift
+			echo "$filestore"
 			;;
 		--lookup)
-			echo "${row[$2]}"
-			shift 2
+			shift
+			if [[ $# > 0 ]]; then
+				echo "${row[$1]%%¦*}"
+				shift
+			fi
 			;;
 		-k|--keys)
-			echo "$keys"
 			shift
+			echo "$keys"
 			;;
 		-o)
-			# Internal option used for tab completion purposes
-			echo "-a --add -l --list -r --remove --clear --purge -h --help -k --keys --locate"
 			shift
+			# Internal option used for tab completion purposes
+			echo "-a --add -l --list -r --remove --clear --pin --unpin --purge -h --help -k --keys --locate"
 			;;
 		-h|--help)
+			shift
 			local args_format="  %-31s%s\n"
 			
 			printf "%s\n\n" "Usage: ${func_name} [OPTION?] [DIRECTORY?] [BOOKMARK?]"
@@ -174,6 +235,8 @@ go () {
 			printf "$args_format" "-r, --remove" "removes a given bookmark"
 			printf "$args_format" "    --clear" "removes all bookmarks"
 			printf "$args_format" "    --purge" "removes bookmarks for non-existing directories"
+			printf "$args_format" "    --pin" "pin a bookmark (survives purge)"
+			printf "$args_format" "    --unpin" "removes the pin from a bookmark"
 			printf "$args_format" "-h, --help" "display this help section"
 			printf "$args_format" "-k, --keys" "lists current keys"
 			printf "$args_format" "    --locate" "list location of data file"
@@ -189,7 +252,6 @@ go () {
 			printf "$args_format" "${func_name} -r music" "removes the bookmark with the key \"music\""
 			printf "\n%s\n" "Warning! Violent fish. Do not ${func_name} outside the boundaries of your imagination."
 			echo
-			shift
 			;;
 		--) # end argument parsing
 			shift
@@ -206,8 +268,8 @@ go () {
 			local dest=""
 			if [[ -d "$1" ]]; then
 				dest="$1"
-			elif [[ ${row[$key]} != "" ]]; then
-				dest=${row[$key]}
+			elif [[ ! -z "${row[$key]}" ]]; then
+				dest=${row[$key]%%¦*}
 			elif [[ "$key" =~ ^[.]+$ ]]; then
 				dest="."
 				dots=${#key}
