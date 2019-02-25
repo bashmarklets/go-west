@@ -28,6 +28,8 @@ Usage: go [OPTION?] [DIRECTORY?] [BOOKMARK?]
   -r, --remove                   removes a given bookmark
       --clear                    removes all bookmarks
       --purge                    removes bookmarks for non-existing directories
+      --pin                      pin a bookmark (survives purge)
+      --unpin                    removes the pin from a bookmark
   -h, --help                     display this help section
   -k, --keys                     lists current keys
       --locate                   list location of data file
