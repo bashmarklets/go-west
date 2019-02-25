@@ -56,7 +56,7 @@ go () {
 				shift 2
 				;;
 			*)
-				if [[ -e $3 ]] || [[ $3 =~ "/" ]]; then
+				if [[ -d $3 ]] || [[ $3 =~ "/" ]]; then
 					val=$3
 					key=$2
 				else
@@ -294,7 +294,7 @@ go () {
 
 # Tab completion
 if [ $ZSH_VERSION ]; then
-        function _gocomp {
+	function _gocomp {
 		if [[ "${#words[*]}" == "2" ]]; then
 			if [[ "${words[CURRENT]}" == '-'* ]]; then
 				reply=($(go -o))
@@ -328,13 +328,13 @@ if [ $ZSH_VERSION ]; then
 		return 0
 	}
         
-        compctl -K _gocomp + -x \
-		'c[-1,-l],c[-1,--list],c[-1,--clear],c[-1,--purge],c[-1,-h],c[-1,--help],c[-1,-k],c[-1,--keys],c[-1,--locate]' -k "()" - \
-		's[prj/]' -s 'path/to/file' - \
-		's[]' -/ -- \
-		go
+    compctl -K _gocomp + -x \
+	'c[-1,-l],c[-1,--list],c[-1,--clear],c[-1,--purge],c[-1,-h],c[-1,--help],c[-1,-k],c[-1,--keys],c[-1,--locate]' -k "()" - \
+	's[prj/]' -s 'path/to/file' - \
+	's[]' -/ -- \
+	go
 else
-        function _gocomp {
+	function _gocomp {
 		if [[ "${#COMP_WORDS[@]}" == "2" ]]; then
 			if [[ "${COMP_WORDS[COMP_CWORD]}" == '-'* ]]; then
 				COMPREPLY=($(compgen -W '$(go -o)' -- ${COMP_WORDS[COMP_CWORD]}))
@@ -380,8 +380,8 @@ else
 					;;
 			esac
 		fi
-                return 0
-        }
-        shopt -s progcomp
-        complete -o dirnames -F _gocomp go
+		return 0
+	}
+	shopt -s progcomp
+	complete -o dirnames -F _gocomp go
 fi
