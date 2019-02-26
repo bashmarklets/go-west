@@ -50,7 +50,7 @@ Examples:
 
 Example output:
 ```bash
-[bash@marklet:/home/bash]
+[bash@marklet:~]
 $ go west
 .  ..  .git  .gitignore  go.inc  LICENSE  README.md
 [bash@marklet:/home/bash/path/to/bashmarklets/go-west]
@@ -64,7 +64,7 @@ How about giving it a go and see for yourself?
 
 Most people have the tendency of doing a quick `ls` after changing directories. For convenience the go script does this automatically by default.
 
-Should you not like this then you can change it to another command of choice by setting the _GOCMD variable, e.g.
+Should you not like this then you can change it to another command of choice by setting the \_GOCMD variable, e.g.
 ```bash
 _GOCMD="ls -l"
 ```
@@ -73,13 +73,26 @@ or, if you do not want this at all then try setting it to a no-op like this:
 _GOCMD=":"
 ```
 
+## Remote directories
+
+There is some basic support for jumping to directories on remote machines / servers.
+
+The criteria for this is that the username, hostname and full path to the directory is included in the bookmark.
+
+Example adding such a bookmark:
+```
+[bash@marklet:~]
+$ go -a bash@remote:/full/path/to/logs remote_logs
+bash@remote:/full/path/to/logs added as remote_logs
+```
+
 ## Going beyond defined bookmarks
 
 OK so you love the go script and can't live without it, but you'd wish that you could jump to any directory in your documents folder without having to bookmark each and every one individually?
 
 It is possible to extend the realm of go by adding custom secondary lookups for unknown keys.
 
-Here is an example that looks for additional directories in ~/Documents using a case insensitive search.
+Here is an example that looks for additional directories in `~/Documents` using a case insensitive search.
 
 ```bash
 typeset -gA _GOEXT

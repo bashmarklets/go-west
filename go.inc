@@ -49,7 +49,7 @@ go () {
 			shift
 
 			if [[ $# > 0 ]] && [[ ! "$1" =~ ^- ]]; then
-				if [[ -d "$1" ]] || [[ "$1" =~ / ]]; then
+				if [[ -d "$1" ]] || [[ "$1" =~ (/|:|@) ]]; then
 					val=$1
 				else
 					key=$1
@@ -63,7 +63,7 @@ go () {
 					val=$1
 				elif [[ -d "$val" ]]; then
 					key=$1
-				elif [[ "$1" =~ / ]]; then
+				elif [[ "$1" =~ (/|:|@) ]]; then
 					key=$val
 					val=$1
 				else
@@ -151,7 +151,7 @@ go () {
 			if [[ -z "${key}" ]]; then
 				meta="¦pin"
 			elif [[ ! -z "${row[$key]}" ]]; then
-				if [[ "${row[$key]}" =~ ¦pin(¦|$) ]]; then
+				if [[ "${row[$key]#*¦}" =~ (¦|^)pin(¦|$) ]]; then
 					echo "Bookmark with key \"$key\" is already pinned"
 				else
 					row[$key]="${row[$key]}¦pin"
@@ -172,7 +172,7 @@ go () {
 			if [[ -z "${key}" ]]; then
 				echo "Please specify the bookmark you wish to unpin"
 			elif [[ ! -z "${row[$key]}" ]]; then
-				if [[ "${row[$key]}" =~ ¦pin(¦|$) ]]; then
+				if [[ "${row[$key]#*¦}" =~ (¦|^)pin(¦|$) ]]; then
 					row[$key]="${row[$key]//¦pin/}"
 					echo "Unpinned key \"$key\""
 					dirty=1
@@ -196,10 +196,12 @@ go () {
 			for key in $keys; do
 				if [[ "${row[$key]#*¦}" =~ (¦|^)pin(¦|$) ]]; then
 					exists="🖈  "
+				elif [[ "${row[$key]#*¦}" =~ (¦|^)remote(¦|$) ]] || [[ "${row[$key]%%¦*}" =~ @[^:]+: ]]; then
+					exists="ʀ  "
 				elif [[ -d ${row[$key]%%¦*} ]]; then
 					exists=""
 				else
-					exists=" - "
+					exists="‒  "
 				fi
 				printf "$list_format" "$key" "$exists" "${row[$key]%%¦*}"
 			done
@@ -270,6 +272,7 @@ go () {
 				dest="$1"
 			elif [[ ! -z "${row[$key]}" ]]; then
 				dest=${row[$key]%%¦*}
+				meta=${row[$key]#*¦}
 			elif [[ "$key" =~ ^[.]+$ ]]; then
 				dest="."
 				dots=${#key}
@@ -309,28 +312,39 @@ go () {
 			fi
 
 			if [[ ! -z "$dest" ]]; then
-				# We could test if directory exists here, but explicitly
-				# trying and failing should allow support for autofs
-				builtin cd "$dest" > /dev/null 2>&1
-				if [ $? -eq 0 ]; then
-					# If the key contains a backslash, e.g. prj/other, then
-					# see if the remainder (other) directories exists, and
-					# if so try to cd into these as well.
-					if [[ ! -z "$key" ]] && [[ "$1" == *"/"* ]] && [[ ! -z "${1#*/}" ]]; then
-						if [[ -d "${1#*/}" ]]; then
-							builtin cd "${1#*/}" > /dev/null 2>&1
-						else
-							echo "Directory ${1#*/} does not seem to exist"
-						fi
+				if [[ "$meta" =~ (¦|^)remote(¦|$) ]] || [[ "$dest" =~ @[^:]+: ]]; then
+					if [[ "$dest" =~ : ]]; then
+						local desthost=${dest%%:*}
+						local destdir=${dest#*:}
+						local destdir=${destdir//\~\//}
+						ssh -t "$desthost" "builtin cd \"$destdir\" && ${_GOCMD:-ls -a --color=auto} && exec \$SHELL -l"
+					else
+						ssh "$dest"
 					fi
-					
-					# Most people have the habit of typing ls after
-					# changing directory, let's do this automatically
-					# This functionality can be tailored by setting
-					# the _GOCMD variable to a command of choice.
-					eval ${_GOCMD:-ls -a --color=auto}
 				else
-					echo "Directory $dest does not seem to exist, perhaps you need to mount something?"
+					# We could test if directory exists here, but explicitly
+					# trying and failing should allow support for autofs
+					builtin cd "$dest" > /dev/null 2>&1
+					if [[ $? -eq 0 ]]; then
+						# If the key contains a backslash, e.g. prj/other, then
+						# see if the remainder (other) directories exists, and
+						# if so try to cd into these as well.
+						if [[ ! -z "$key" ]] && [[ "$1" == *"/"* ]] && [[ ! -z "${1#*/}" ]]; then
+							if [[ -d "${1#*/}" ]]; then
+								builtin cd "${1#*/}" > /dev/null 2>&1
+							else
+								echo "Directory ${1#*/} does not seem to exist"
+							fi
+						fi
+						
+						# Most people have the habit of typing ls after
+						# changing directory, let's do this automatically
+						# This functionality can be tailored by setting
+						# the _GOCMD variable to a command of choice.
+						eval ${_GOCMD:-ls -a --color=auto}
+					else
+						echo "Directory $dest does not seem to exist, perhaps you need to mount something?"
+					fi
 				fi
 			fi
 			break
@@ -363,7 +377,7 @@ if [ $ZSH_VERSION ]; then
 			elif [[ "${words[CURRENT]}" == *'/'* ]]; then
 				# Special handling for <bookmark>/<tab>, pretend that
 				# bookmark is an actual directory.
-				local slashes="${words[CURRENT]//[^\/]}"
+				local slashes="${words[CURRENT]//[^\/]/}"
 				local key=${words[CURRENT]%%/*}
 				local dir=$(go --lookup "$key")
 				local suggestions
