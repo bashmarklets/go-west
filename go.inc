@@ -133,7 +133,11 @@ go () {
 				if [[ "${row[$key]#*¦}" =~ (¦|^)pin(¦|$) ]]; then
 					# pinned key, do not purge
 					continue
+				elif [[ "${row[$key]#*¦}" =~ (¦|^)remote(¦|$) ]] || [[ "${row[$key]%%¦*}" =~ @[^:]+: ]]; then
+					# remote key, do not purge
+					continue
 				fi
+
 				if [[ ! -e "${row[$key]%%¦*}" ]]; then
 					echo "Removing $key ➟ ${row[$key]%%¦*}"
 					unset "row[$key]"
