@@ -27,9 +27,15 @@ Usage: go [OPTION?] [DIRECTORY?] [BOOKMARK?]
   -l, --list                     lists current bookmarks and directories
   -r, --remove                   removes a given bookmark
       --clear                    removes all bookmarks
-      --purge                    removes bookmarks for non-existing directories
-      --pin                      pin a bookmark (survives purge)
+      --purge                    removes temporary bookmarks and bookmarks for
+                                 non-existing directories, pinned bookmarks
+                                 are not affected by purge
+      --pin                      pin a bookmark
       --unpin                    removes the pin from a bookmark
+      --temp                     mark a bookmark as temporary
+      --untemp                   unmark a bookmark as temporary
+      --remote                   mark a bookmark location as being remote
+      --unremote                 unmark a bookmark location as being remote
   -h, --help                     display this help section
   -k, --keys                     lists current keys
       --locate                   list location of data file
@@ -119,4 +125,3 @@ Note that tab completion is not supported for these kind of extensions.
    - https://github.com/jeroenvisser101/project-switcher
    - http://xd-home.sourceforge.net/xdman.html
    - https://github.com/rupa/z/
-
