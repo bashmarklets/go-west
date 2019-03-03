@@ -11,7 +11,12 @@ function go () {
 	else
 		local func_name=${FUNCNAME[0]}
 	fi
-	local filestore=${HOME:-~}/.${func_name}.db
+
+	if [[ ! -z "${_GOSETTINGS[filestore]}" ]]; then
+		local filestore="${_GOSETTINGS[filestore]}"
+	else
+		local filestore=${HOME:-~}/.${func_name}.db
+	fi
 
 	typeset -A row
 	local tmpifs=$IFS
@@ -310,27 +315,24 @@ function go () {
 				return
 			fi
 
-			local list_format="%-17s%s%-10s\n"
+			local list_format="${_GOSETTINGS[list_format]:-%-17s%s%-10s\n}"
 			local exists
 			for key in $keys; do
 				exists=""
 				if [[ "${row[$key]#*¦}" =~ (¦|^)pin(¦|$) ]]; then
-					exists="${exists}🖈"
+					exists="${exists}${_GOSETTINGS[symbol_pin]:-🖈}"
 				else
 					if [[ "${row[$key]#*¦}" =~ (¦|^)tmp(¦|$) ]]; then
-						# exists="🇹  "
-						exists="${exists}ᴛ"
+						exists="${exists}${_GOSETTINGS[symbol_tmp]:-ᴛ}"
 					fi
 					if [[ "${row[$key]#*¦}" =~ (¦|^)remote(¦|$) ]] ||
 					   [[ "${row[$key]%%¦*}" =~ @[^:]+: ]]; then
-						exists="${exists}ʀ"
-						# exists="🇷  "
-						# exists="𐌺  "
+						exists="${exists}${_GOSETTINGS[symbol_rem]:-ʀ}"
 					fi
 				fi
 
 				if [[ -z "$exists" ]] && [[ ! -d ${row[$key]%%¦*} ]]; then
-					exists="${exists}‒"
+					exists="${exists}${_GOSETTINGS[symbol_dir]:-‒}"
 				fi
 
 				while [[ ${#exists} < 3 ]]; do
@@ -352,6 +354,12 @@ function go () {
 				shift
 			fi
 			;;
+		--setup_aliases)
+			shift
+			for key in $keys; do
+				alias "$key"="go $key"
+			done
+			;;
 		-k|--keys)
 			shift
 			echo "$keys"
@@ -360,7 +368,7 @@ function go () {
 			shift
 			# Internal option used for tab completion purposes
 			echo "-a --add -l --list -r --remove --clear --pin --unpin --purge -h --help"\
-				 "-k --keys --locate --temp --untemp --remote --unremote"
+				 "-k --keys --locate --temp --untemp --remote --unremote --lookup --setup_aliases"
 			;;
 		-h|--help)
 			shift
@@ -383,6 +391,7 @@ function go () {
 			printf "$fmt" "-h, --help" "display this help section"
 			printf "$fmt" "-k, --keys" "lists current keys"
 			printf "$fmt" "    --locate" "list location of data file"
+			printf "$fmt" "    --setup_aliases" "set up aliases for all bookmarks"
 			printf "\n%s\n" "Predefined bookmarks:"
 			printf "$fmt" "home" "moves to home directory"
 			printf "$fmt" "back" "moves back to previous directory"
@@ -463,7 +472,7 @@ function go () {
 						local destdir=${dest#*:}
 						local destdir=${destdir//\~\//}
 						ssh -t "$desthost" "builtin cd \"$destdir\" && "\
-							   "${_GOCMD:-ls -a --color=auto} && exec \$SHELL -l"
+							   "${_GOSETTINGS[post_cd_cmd]:-ls -a --color=auto} && exec \$SHELL -l"
 					else
 						ssh "$dest"
 					fi
@@ -483,11 +492,10 @@ function go () {
 							fi
 						fi
 						
-						# Most people have the habit of typing ls after
-						# changing directory, let's do this automatically
-						# This functionality can be tailored by setting
-						# the _GOCMD variable to a command of choice.
-						eval ${_GOCMD:-ls -a --color=auto}
+						# Most people have the habit of typing ls after changing directory,
+						# let's do this automatically. This functionality can be tailored by
+						# setting the _GOSETTINGS[post_cd_cmd] variable to a command of choice.
+						eval "${_GOSETTINGS[post_cd_cmd]:-ls -a --color=auto}"
 					else
 						echo "Directory $dest does not seem to exist, perhaps you need to mount"\
 							 "something?"
@@ -546,7 +554,8 @@ if [ $ZSH_VERSION ]; then
 			fi
 		else
 			case ${words[2]} in
-				-r|--remove|--pin|--unpin|--tmp|--untmp|--temp|--untemp|--remote|--unremote)
+				-r|--remove|--pin|--unpin|--tmp|--untmp|--temp|--untemp|--remote|--unremote|\
+				--lookup)
 					reply=($(go -k))
 					;;
 			esac
@@ -555,7 +564,8 @@ if [ $ZSH_VERSION ]; then
 	}
         
     compctl -K _gocomp + -x \
-	'c[-1,-l],c[-1,--list],c[-1,--clear],c[-1,--purge],c[-1,-h],c[-1,--help],c[-1,-k],c[-1,--keys],c[-1,--locate]' -k "()" - \
+	'c[-1,-l],c[-1,--list],c[-1,--clear],c[-1,--purge],c[-1,-h],c[-1,--help]' -k "()" - \
+	'c[-1,-k],c[-1,--keys],c[-1,--locate],c[-1,--setup_aliases]' -k "()" - \
 	's[prj/]' -s 'path/to/file' - \
 	's[]' -/ -- \
 	go
@@ -589,10 +599,11 @@ else
 			fi
 		else
 			case ${COMP_WORDS[1]} in
-				-l|--list|--clear|--purge|-h|--help|-k|--keys|--locate)
+				-l|--list|--clear|--purge|-h|--help|-k|--keys|--locate|--setup_aliases)
 					COMPREPLY=($'\0'); # no further suggestions
 					;;
-				-r|--remove|--pin|--unpin|--tmp|--untmp|--temp|--untemp|--remote|--unremote)
+				-r|--remove|--pin|--unpin|--tmp|--untmp|--temp|--untemp|--remote|--unremote|\
+				--lookup)
 					COMPREPLY=($(compgen -W '$(go -k)' -- ${COMP_WORDS[COMP_CWORD]}))
 					;;
 				-a|--add)

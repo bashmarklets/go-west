@@ -39,6 +39,8 @@ Usage: go [OPTION?] [DIRECTORY?] [BOOKMARK?]
   -h, --help                     display this help section
   -k, --keys                     lists current keys
       --locate                   list location of data file
+      --setup_aliases            set up aliases for all bookmarks
+
 
 Predefined bookmarks:
   home                           moves to home directory
@@ -66,18 +68,26 @@ Note that if you don't like the function name of `go` then you can change this t
 
 How about giving it a go and see for yourself?
 
+## Sorry, but I still prefer aliases
+
+Old habits are hard to kick, one can understand that. Fret not because you can still use aliases while taking advantage of the features of the go script.
+
+The `go --setup_aliases` command sets up aliases for all your bookmarks, e.g. for the bookmark "music" an alias of `alias music="go music"` will be added. Add this call to your .bashrc and you are good to go.
+
 ## Post cd actions
 
 Most people have the tendency of doing a quick `ls` after changing directories. For convenience the go script does this automatically by default.
 
-Should you not like this then you can change it to another command of choice by setting the \_GOCMD variable, e.g.
+Should you not like this then you can change it to another command of choice by setting the \_GOSETTINGS\[post_cd_cmd\] variable, e.g.
 ```bash
-_GOCMD="ls -l"
+_GOSETTINGS[post_cd_cmd]="ls -l"
 ```
 or, if you do not want this at all then try setting it to a no-op like this:
 ```bash
-_GOCMD=":"
+_GOSETTINGS[post_cd_cmd]=":"
 ```
+
+NB: Have a look at [go_settings.inc](https://github.com/bashmarklets/go-west/blob/master/go_settings.inc) for other obscure settings. It is possible to source this file, but it is primarily meant as a point of reference listing the various configuration options.
 
 ## Remote directories
 
