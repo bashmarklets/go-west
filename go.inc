@@ -8,6 +8,7 @@
 function go () {
 	if [ $ZSH_VERSION ]; then
 		local func_name=$funcstack[1]
+		setopt local_options BASH_REMATCH
 	else
 		local func_name=${FUNCNAME[0]}
 	fi
@@ -108,10 +109,10 @@ function go () {
 					key=${key,,}
 				fi
 			fi
-			
+
 			# No support for spaces and ¦ in bookmarks
 			key=${key//[ ¦]/}
-			
+
 			if [[ -z "$key" ]]; then
 				echo "Please specify a name to store this bookmark as"
 			else
@@ -140,7 +141,7 @@ function go () {
 			if [[ -z "$key" ]]; then
 				key=${$(pwd)##*/}
 			fi
-			
+
 			if [[ ! -z "${row[$key]}" ]]; then
 				val=${row[$key]%%¦*}
 				unset "row[$key]"
@@ -373,7 +374,7 @@ function go () {
 		-h|--help)
 			shift
 			local fmt="  %-31s%s\n"
-			
+
 			printf "%s\n\n" "Usage: ${func_name} [OPTION?] [DIRECTORY?] [BOOKMARK?]"
 			printf "$fmt" "-a, --add" "adds directory with the given bookmark"
 			printf "$fmt" "-l, --list" "lists current bookmarks and directories"
@@ -417,13 +418,15 @@ function go () {
 			echo "Error: Unsupported flag $1" >&2
 			shift
 			;;
-		*) # positional arguments, look up key and cd into it
+		*)  # positional arguments, look up key and cd into it
 			# If the key contains a backslash, e.g. prj/other, then
 			# only use the prj part for the lookup
 			local key=${1%%/*}
 			local dest=""
 			if [[ -d "$1" ]]; then
 				dest="$1"
+			elif [[ -f "$1" ]]; then
+				dest=$(dirname "$1")
 			elif [[ ! -z "${row[$key]}" ]]; then
 				dest=${row[$key]%%¦*}
 				meta=${row[$key]#*¦}
@@ -443,6 +446,13 @@ function go () {
 				dest="-"
 			elif [[ -d "$key" ]]; then
 				dest="$key"
+			else
+				for key in $keys; do
+					if [[ "${row[$key]%%¦*}" =~ "^(.*/${1}(/|$))" ]]; then
+						dest="${BASH_REMATCH[1]}"
+						break
+					fi
+				done
 			fi
 
 			# Optionally other custom indexing solutions can be set
@@ -458,7 +468,7 @@ function go () {
 					fi
 				done
 			fi
-			
+
 			# Multiple destinations found, print these
 			if [[ "$dest" == *$'\n'* ]]; then
 				echo "$dest"
@@ -491,7 +501,7 @@ function go () {
 								echo "Directory ${1#*/} does not seem to exist"
 							fi
 						fi
-						
+
 						# Most people have the habit of typing ls after changing directory,
 						# let's do this automatically. This functionality can be tailored by
 						# setting the _GOSETTINGS[post_cd_cmd] variable to a command of choice.
@@ -506,7 +516,7 @@ function go () {
 			;;
 		esac
 	done
-	
+
 	if [[ $dirty == 1 ]]; then
 		if [ $ZSH_VERSION ]; then
 			local keys=($(echo ${(k@)row} | tr ' ' '\n' | sort))
@@ -519,7 +529,7 @@ function go () {
 		done
 		echo -e $output > "$filestore"
 	fi
-	
+
 	IFS=$tmpifs
 }
 
@@ -562,7 +572,7 @@ if [ $ZSH_VERSION ]; then
 		fi
 		return 0
 	}
-        
+
     compctl -K _gocomp + -x \
 	'c[-1,-l],c[-1,--list],c[-1,--clear],c[-1,--purge],c[-1,-h],c[-1,--help]' -k "()" - \
 	'c[-1,-k],c[-1,--keys],c[-1,--locate],c[-1,--setup_aliases]' -k "()" - \
@@ -590,7 +600,7 @@ else
 				fi
 			else
 				suggestions=($(compgen -W '$(go -k)' -- ${COMP_WORDS[COMP_CWORD]}))
-				
+
 				if [[ ${#suggestions[*]} == 1 ]]; then
 					COMPREPLY=("${suggestions[*]}" "${suggestions[*]}/")
 				else
