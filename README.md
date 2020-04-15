@@ -135,3 +135,5 @@ Note that tab completion is not supported for these kind of extensions.
    - https://github.com/jeroenvisser101/project-switcher
    - http://xd-home.sourceforge.net/xdman.html
    - https://github.com/rupa/z/
+   - https://github.com/wting/autojump
+   - https://github.com/mfaerevaag/wd
