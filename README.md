@@ -139,3 +139,5 @@ Note that tab completion is not supported for these kind of extensions.
    - https://github.com/rupa/z
    - https://github.com/junegunn/fzf
    - https://github.com/b4b4r07/enhancd
+   - https://github.com/iridakos/goto
+
