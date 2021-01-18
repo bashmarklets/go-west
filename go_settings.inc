@@ -13,6 +13,7 @@ typeset -Ag _GOSETTINGS
 # Print settings
 _GOSETTINGS[help_format]="  %-31s%s\n"; # controls go -h layout
 _GOSETTINGS[list_format]="%-17s%s%-10s\n"; # controls go -l layout
+_GOSETTINGS[ext_scripts]=0 # external scripts requires -e or --ext flag, set this to 1 to enable them by default
 _GOSETTINGS[symbol_tmp]="ᴛ"
 _GOSETTINGS[symbol_pin]="🖈"
 _GOSETTINGS[symbol_rem]="ʀ"

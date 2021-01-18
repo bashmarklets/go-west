@@ -131,6 +131,9 @@ function go () {
 				meta=""
 			fi
 			;;
+		-e|--ext)
+			_GOSETTINGS[ext_scripts]=1
+			;;
 		-r|--remove)
 			shift
 			if [[ $# > 0 ]]; then
@@ -389,6 +392,7 @@ function go () {
 			printf "$fmt" "    --untemp" "unmark a bookmark as temporary"
 			printf "$fmt" "    --remote" "mark a bookmark location as being remote"
 			printf "$fmt" "    --unremote" "unmark a bookmark location as being remote"
+			printf "$fmt" "-e, --ext" "enable external scripts to handle additional key lookups"
 			printf "$fmt" "-h, --help" "display this help section"
 			printf "$fmt" "-k, --keys" "lists current keys"
 			printf "$fmt" "    --locate" "list location of data file"
@@ -458,7 +462,7 @@ function go () {
 			# Optionally other custom indexing solutions can be set
 			# up as secondary lookups for unknown "keys" by adding
 			# commands to to the _GOEXT array.
-			if [[ -z "$dest" ]]; then
+			if [[ -z "$dest" ]] && [[ ${_GOSETTINGS[ext_scripts]:-1} == 1 ]]; then
 				for ext_script in "${_GOEXT[@]}"; do
 					if [[ ! -z "$ext_script" ]]; then
 						dest=$(eval $ext_script $@)
