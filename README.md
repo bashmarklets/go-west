@@ -4,7 +4,7 @@ Go is a bash (and zsh) solution that allows you to bookmark directories so that 
 
 ## Why would I want to use something like this?
 
-I believe that *most* people that do work on the console eventually make the realisation that they naviate to the same directories over and over again and they end up optimising it by doing one of two things. Either they create a symlink to the directory in their home directory, or they set up an alias to `cd` into the given directory.
+I believe that *most* people that do work on the console eventually make the realisation that they navigate to the same directories over and over again and they end up optimising it by doing one of two things. Either they create a symlink to the directory in their home directory, or they set up an alias to `cd` into the given directory.
 
 Both of these solutions work great and save the user a lot of time when navigating around. The main problem with these solutions though is that they end up being cumbersome to maintain as the number of directories grow. Symlinks can also clutter your home directory while it can be hard to remember all the aliases.
 
